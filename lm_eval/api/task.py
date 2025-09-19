@@ -1130,6 +1130,17 @@ class ConfigurableTask(Task):
         if description := self.config.description:
             description = utils.apply_template(self.config.description, doc)
 
+            # DEBUG: Print CEval context construction details
+            if "答案：" in description or "答案:" in description or "ceval" in self.config.task.lower():
+                print(f"\n=== CEVAL CONTEXT CONSTRUCTION DEBUG ===")
+                print(f"Task: {self.config.task}")
+                print(f"Description template: {repr(self.config.description)}")
+                print(f"Applied description: {repr(description)}")
+                print(f"Num fewshot: {num_fewshot}")
+                print(f"Apply chat template: {apply_chat_template}")
+                print(f"System instruction: {system_instruction}")
+                print(f"=== END CONTEXT DEBUG ===\n")
+
         # create system prompt based on the provided system instruction and description
         if system_instruction is not None and description:
             system_prompt = (
@@ -1165,6 +1176,20 @@ class ConfigurableTask(Task):
                 )
 
         example = self.doc_to_text(doc)
+
+        # DEBUG: Print full context for CEval prompts
+        if ("答案：" in str(labeled_examples) or "答案:" in str(labeled_examples) or
+            "ceval" in self.config.task.lower()):
+            print(f"\n=== CEVAL FULL CONTEXT DEBUG ===")
+            print(f"Task: {self.config.task}")
+            print(f"Labeled examples: {repr(labeled_examples[:300])}...")
+            print(f"Current example: {repr(example)}")
+            print(f"Apply chat template: {apply_chat_template}")
+            if not apply_chat_template:
+                final_context = labeled_examples + example if isinstance(labeled_examples, str) else str(labeled_examples) + str(example)
+                print(f"Final context (preview): {repr(final_context[:400])}...")
+            print(f"=== END FULL CONTEXT DEBUG ===\n")
+
         if apply_chat_template:
             if self.multiple_input:
                 # TODO: append prefill?
