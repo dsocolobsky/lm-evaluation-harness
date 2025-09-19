@@ -370,15 +370,29 @@ class TemplateLM(LM):
             context_enc_len = len(context_enc)
             continuation_enc = whole_enc[context_enc_len:]
 
-        # DEBUG: Print encoding pair details for CEval prompts
-        if "答案：" in context or "答案:" in context or "答案：" in continuation or "答案:" in continuation:
-            print(f"\n=== ENCODE_PAIR DEBUG ===")
-            print(f"Context: {repr(context[:100])}...")
-            print(f"Continuation: {repr(continuation)}")
-            print(f"Context encoding: {context_enc}")
-            print(f"Continuation encoding: {continuation_enc}")
+        # DEBUG: Print encoding pair details for target CEval question only
+        if "为了定量分析采取某项措施对于减少城市污染的效果" in context:
+            print(f"\n=== TARGET QUESTION FOUND ===")
+            print("EXACT PROMPT TEXT FOR LM_EVAL COPY-PASTE:")
+            print(f"Context: '{context}'")
+            print(f"Choice continuation: '{continuation}'")
+
+            print(f"\n--- LM_EVAL TEST STRINGS ---")
+            print("For lm_eval encode_pair debugging:")
+            print(f"context = '''{context}'''")
+            print(f"continuation = '''{continuation}'''")
+            print("----------------------------")
+
+            print(f"FULL CONTEXT TOKENS: {context_enc}")
+            print(f"CONTEXT TOKEN COUNT: {len(context_enc)}")
+            print(f"CONTINUATION TOKENS: {continuation_enc}")
+            print(f"CONTINUATION TOKEN COUNT: {len(continuation_enc)}")
+
+            # Create full sequence like in Rust code
+            full_sequence = context_enc + continuation_enc
+            print(f"FULL SEQUENCE FOR CHOICE '{continuation}': {full_sequence}")
             print(f"Model class: {model_class}")
-            print(f"=== END ENCODE_PAIR DEBUG ===\n")
+            print(f"===============================\n")
 
         return context_enc, continuation_enc
 
@@ -393,14 +407,14 @@ class TemplateLM(LM):
                     [self.prefix_token_id],
                     self.tok_encode(continuation),
                 )
-                # DEBUG: Print prefix token handling
-                if "答案：" in continuation or "答案:" in continuation:
-                    print(f"\n=== EMPTY CONTEXT DEBUG ===")
+                # DEBUG: Print prefix token handling for target question only
+                if "为了定量分析采取某项措施对于减少城市污染的效果" in continuation:
+                    print(f"\n=== TARGET QUESTION EMPTY CONTEXT DEBUG ===")
                     print(f"Using prefix_token_id: {self.prefix_token_id}")
                     print(f"Continuation: {repr(continuation)}")
                     print(f"Context_enc: {context_enc}")
                     print(f"Continuation_enc: {continuation_enc}")
-                    print(f"=== END EMPTY CONTEXT DEBUG ===\n")
+                    print(f"=== END TARGET EMPTY CONTEXT DEBUG ===\n")
             else:
                 context_enc, continuation_enc = self._encode_pair(context, continuation)
 

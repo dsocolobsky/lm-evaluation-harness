@@ -903,20 +903,20 @@ class HFLM(TemplateLM):
 
         encoding = self.tokenizer.encode(string, **special_tokens_kwargs)
 
-        # DEBUG: Print tokenization details for CEval prompts
-        if "答案：" in string or "答案:" in string:
-            print(f"\n=== LM_EVAL TOKENIZATION DEBUG ===")
+        # DEBUG: Print tokenization details for target CEval question only
+        if "为了定量分析采取某项措施对于减少城市污染的效果" in string:
+            print(f"\n=== TARGET QUESTION TOKENIZATION DEBUG ===")
             print(f"Model: {getattr(self, 'pretrained', 'unknown')}")
             print(f"Backend: {self.backend}")
             print(f"add_bos_token: {self.add_bos_token}")
             print(f"special_tokens_kwargs: {special_tokens_kwargs}")
-            print(f"String: {repr(string[:200])}...")
+            print(f"String: {repr(string)}")
             print(f"BOS token: {self.tokenizer.bos_token} (ID: {self.tokenizer.bos_token_id})")
             print(f"EOS token: {self.tokenizer.eos_token} (ID: {self.tokenizer.eos_token_id})")
+            print(f"Full encoding: {encoding}")
             print(f"Encoding length: {len(encoding)}")
-            print(f"First 10 tokens: {encoding[:10]}")
-            print(f"Decoded tokens: {[self.tokenizer.decode([t]) for t in encoding[:10]]}")
-            print(f"=== END DEBUG ===\n")
+            print(f"Decoded tokens: {[self.tokenizer.decode([t]) for t in encoding]}")
+            print(f"=== END TARGET TOKENIZATION DEBUG ===\n")
 
         # left-truncate the encoded context to be at most `left_truncate_len` tokens long
         if left_truncate_len:

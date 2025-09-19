@@ -1130,16 +1130,16 @@ class ConfigurableTask(Task):
         if description := self.config.description:
             description = utils.apply_template(self.config.description, doc)
 
-            # DEBUG: Print CEval context construction details
-            if "答案：" in description or "答案:" in description or "ceval" in self.config.task.lower():
-                print(f"\n=== CEVAL CONTEXT CONSTRUCTION DEBUG ===")
+            # DEBUG: Print CEval context construction details for target question only
+            if "注册城乡规划师" in description and "urban_and_rural_planner" in self.config.task.lower():
+                print(f"\n=== TARGET QUESTION CONTEXT CONSTRUCTION DEBUG ===")
                 print(f"Task: {self.config.task}")
                 print(f"Description template: {repr(self.config.description)}")
                 print(f"Applied description: {repr(description)}")
                 print(f"Num fewshot: {num_fewshot}")
                 print(f"Apply chat template: {apply_chat_template}")
                 print(f"System instruction: {system_instruction}")
-                print(f"=== END CONTEXT DEBUG ===\n")
+                print(f"=== END TARGET CONTEXT DEBUG ===\n")
 
         # create system prompt based on the provided system instruction and description
         if system_instruction is not None and description:
@@ -1177,18 +1177,18 @@ class ConfigurableTask(Task):
 
         example = self.doc_to_text(doc)
 
-        # DEBUG: Print full context for CEval prompts
-        if ("答案：" in str(labeled_examples) or "答案:" in str(labeled_examples) or
-            "ceval" in self.config.task.lower()):
-            print(f"\n=== CEVAL FULL CONTEXT DEBUG ===")
+        # DEBUG: Print full context for target question only
+        if ("为了定量分析采取某项措施对于减少城市污染的效果" in str(labeled_examples) or
+            "为了定量分析采取某项措施对于减少城市污染的效果" in str(example)):
+            print(f"\n=== TARGET QUESTION FULL CONTEXT DEBUG ===")
             print(f"Task: {self.config.task}")
-            print(f"Labeled examples: {repr(labeled_examples[:300])}...")
+            print(f"Labeled examples: {repr(labeled_examples)}")
             print(f"Current example: {repr(example)}")
             print(f"Apply chat template: {apply_chat_template}")
             if not apply_chat_template:
                 final_context = labeled_examples + example if isinstance(labeled_examples, str) else str(labeled_examples) + str(example)
-                print(f"Final context (preview): {repr(final_context[:400])}...")
-            print(f"=== END FULL CONTEXT DEBUG ===\n")
+                print(f"Final complete context: {repr(final_context)}")
+            print(f"=== END TARGET FULL CONTEXT DEBUG ===\n")
 
         if apply_chat_template:
             if self.multiple_input:
@@ -1503,6 +1503,21 @@ class ConfigurableTask(Task):
             else:
                 # Otherwise they are placed in the continuation
                 arguments = [(ctx, f"{target_delimiter}{cont}") for cont in choices]
+
+                # DEBUG: Print choice formatting for target question only
+                if "为了定量分析采取某项措施对于减少城市污染的效果" in ctx:
+                    print(f"\n=== TARGET QUESTION CHOICE PROCESSING DEBUG ===")
+                    print(f"Task: {self.config.task}")
+                    print(f"Target delimiter: {repr(target_delimiter)}")
+                    print(f"Original choices: {choices}")
+                    print(f"Formatted choices:")
+                    for i, choice in enumerate(choices):
+                        formatted = f"{target_delimiter}{choice}"
+                        print(f"  Choice {['A', 'B', 'C', 'D'][i]}: {repr(formatted)}")
+                    print(f"Arguments created:")
+                    for i, (context, continuation) in enumerate(arguments):
+                        print(f"  Argument {['A', 'B', 'C', 'D'][i]}: context=CONTEXT, continuation={repr(continuation)}")
+                    print(f"=== END TARGET CHOICE PROCESSING DEBUG ===\n")
 
             # TODO: we should raise a warning telling users this will at most ~2x runtime.
             if "acc_mutual_info" in self._metric_fn_list.keys():
