@@ -760,11 +760,47 @@ class HFLM(TemplateLM):
         if subfolder:
             kwargs["subfolder"] = subfolder
 
+        # Helper function to load tokenizer with URL logging for DeepSeek models
+        def _load_tokenizer_with_url_logging(model_id, **tokenizer_kwargs):
+            if "deepseek" in model_id.lower():
+                # Enable detailed logging for DeepSeek models to show download URLs
+                import logging
+                import huggingface_hub.utils._http
+
+                # Store original logging level
+                original_level = logging.getLogger("huggingface_hub.utils._http").level
+
+                # Configure custom handler to capture and format URL requests
+                class URLLoggingHandler(logging.StreamHandler):
+                    def emit(self, record):
+                        if hasattr(record, 'msg') and 'GET' in str(record.msg) and 'tokenizer' in str(record.msg):
+                            url = str(record.msg).split('GET ')[1].split(' ')[0]
+                            print(f"[TOKENIZER DOWNLOAD] {url}")
+                        elif hasattr(record, 'msg') and 'HEAD' in str(record.msg) and 'tokenizer' in str(record.msg):
+                            url = str(record.msg).split('HEAD ')[1].split(' ')[0]
+                            print(f"[TOKENIZER CHECK] {url}")
+
+                # Add custom handler
+                hf_logger = logging.getLogger("huggingface_hub.utils._http")
+                custom_handler = URLLoggingHandler()
+                custom_handler.setLevel(logging.DEBUG)
+                hf_logger.addHandler(custom_handler)
+                hf_logger.setLevel(logging.DEBUG)
+
+                try:
+                    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, **tokenizer_kwargs)
+                finally:
+                    # Restore original logging setup
+                    hf_logger.removeHandler(custom_handler)
+                    hf_logger.setLevel(original_level)
+
+                return tokenizer
+            else:
+                return transformers.AutoTokenizer.from_pretrained(model_id, **tokenizer_kwargs)
+
         if tokenizer:
             if isinstance(tokenizer, str):
-                self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-                    tokenizer, **kwargs
-                )
+                self.tokenizer = _load_tokenizer_with_url_logging(tokenizer, **kwargs)
             else:
                 assert isinstance(
                     tokenizer,
@@ -781,9 +817,7 @@ class HFLM(TemplateLM):
             else:
                 # get the HF hub name via accessor on model
                 model_name = self.model.name_or_path
-            self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-                model_name, **kwargs
-            )
+            self.tokenizer = _load_tokenizer_with_url_logging(model_name, **kwargs)
 
     def _detect_batch_size(self, requests: Sequence | None = None, pos: int = 0):
         if requests:
@@ -868,6 +902,21 @@ class HFLM(TemplateLM):
             special_tokens_kwargs = {"add_special_tokens": add_special_tokens}
 
         encoding = self.tokenizer.encode(string, **special_tokens_kwargs)
+
+        # DEBUG: Print tokenization details for CEval prompts
+        if "答案：" in string or "答案:" in string:
+            print(f"\n=== LM_EVAL TOKENIZATION DEBUG ===")
+            print(f"Model: {getattr(self, 'pretrained', 'unknown')}")
+            print(f"Backend: {self.backend}")
+            print(f"add_bos_token: {self.add_bos_token}")
+            print(f"special_tokens_kwargs: {special_tokens_kwargs}")
+            print(f"String: {repr(string[:200])}...")
+            print(f"BOS token: {self.tokenizer.bos_token} (ID: {self.tokenizer.bos_token_id})")
+            print(f"EOS token: {self.tokenizer.eos_token} (ID: {self.tokenizer.eos_token_id})")
+            print(f"Encoding length: {len(encoding)}")
+            print(f"First 10 tokens: {encoding[:10]}")
+            print(f"Decoded tokens: {[self.tokenizer.decode([t]) for t in encoding[:10]]}")
+            print(f"=== END DEBUG ===\n")
 
         # left-truncate the encoded context to be at most `left_truncate_len` tokens long
         if left_truncate_len:

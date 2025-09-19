@@ -370,6 +370,16 @@ class TemplateLM(LM):
             context_enc_len = len(context_enc)
             continuation_enc = whole_enc[context_enc_len:]
 
+        # DEBUG: Print encoding pair details for CEval prompts
+        if "答案：" in context or "答案:" in context or "答案：" in continuation or "答案:" in continuation:
+            print(f"\n=== ENCODE_PAIR DEBUG ===")
+            print(f"Context: {repr(context[:100])}...")
+            print(f"Continuation: {repr(continuation)}")
+            print(f"Context encoding: {context_enc}")
+            print(f"Continuation encoding: {continuation_enc}")
+            print(f"Model class: {model_class}")
+            print(f"=== END ENCODE_PAIR DEBUG ===\n")
+
         return context_enc, continuation_enc
 
     def loglikelihood(
@@ -383,6 +393,14 @@ class TemplateLM(LM):
                     [self.prefix_token_id],
                     self.tok_encode(continuation),
                 )
+                # DEBUG: Print prefix token handling
+                if "答案：" in continuation or "答案:" in continuation:
+                    print(f"\n=== EMPTY CONTEXT DEBUG ===")
+                    print(f"Using prefix_token_id: {self.prefix_token_id}")
+                    print(f"Continuation: {repr(continuation)}")
+                    print(f"Context_enc: {context_enc}")
+                    print(f"Continuation_enc: {continuation_enc}")
+                    print(f"=== END EMPTY CONTEXT DEBUG ===\n")
             else:
                 context_enc, continuation_enc = self._encode_pair(context, continuation)
 
